@@ -1,0 +1,19 @@
+# Local Progress & Manifests
+courses-manifest.js
+progress.json
+classes-progress.json
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Video / Large Media Files (if copied locally)
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.avi
+*.pdf

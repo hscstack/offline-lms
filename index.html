@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Offline LMS</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Root Folder Picker Modal -->
+  <div id="welcome-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-icon-wrap">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <h2>Select Course Folder</h2>
+      <p>Choose your classes directory to browse chapters and lectures offline.</p>
+      
+      <div id="reopen-card-wrap" style="display:none; margin-bottom: 12px;">
+        <button id="reopen-folder-btn" class="btn-secondary">
+          <span id="reopen-btn-text">Reopen Saved Folder</span>
+        </button>
+      </div>
+
+      <label class="btn-primary file-picker-label">
+        <span>Choose Folder</span>
+        <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+      </label>
+
+      <label class="btn-secondary file-picker-label" style="margin-top: 10px;">
+        <span>Select Files</span>
+        <input type="file" id="multi-file-input" multiple accept="video/*,.pdf,.mkv,.mp4,.webm" hidden>
+      </label>
+    </div>
+  </div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-brand" id="brand-home-btn" role="button" tabindex="0">
+        <span class="brand-title" id="root-folder-name">Offline LMS</span>
+        <p>Powered By <a href="https://hscstack.site" target="_blank">HSCStack</a></p>
+      </div>
+
+      <!-- Center Overall Progress Bar -->
+      <div class="header-center">
+        <div class="header-progress-wrap" title="Overall course progress">
+          <div class="header-progress-track">
+            <div id="overall-progress-bar" class="header-progress-fill" style="width: 0%;"></div>
+          </div>
+          <span id="overall-progress-text" class="header-progress-label">0%</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button id="todo-toggle-btn" class="btn-header-ghost btn-header-todo" title="Open To-Do List">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span>To-Do</span>
+          <span id="todo-badge" class="todo-header-badge" style="display: none;">0</span>
+        </button>
+        <button id="import-progress-btn" class="btn-header-ghost">Import</button>
+        <input type="file" id="import-progress-input" accept=".json" hidden>
+        <button id="export-progress-btn" class="btn-header-ghost">Export</button>
+        <button id="change-folder-btn" class="btn-header-ghost">Change Folder</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- VIEW 1: CHAPTERS OVERVIEW -->
+    <section id="view-chapters" class="view-section active">
+      <div class="view-hero">
+        <h1 class="hero-title">Chapters</h1>
+        <div class="hero-search">
+          <svg class="search-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="chapters-search" placeholder="Search chapters..." autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Continue Watching Card -->
+      <div id="continue-watching-container"></div>
+
+      <!-- Subject Filter Tabs -->
+      <div class="subject-filter-wrapper">
+        <div class="subject-filter-bar" id="subject-filter-tabs">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Grid of Chapters -->
+      <div class="chapters-grid" id="chapters-grid">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: CHAPTER CLASSES (LMS CARD GRID) -->
+    <section id="view-classes" class="view-section">
+      <div class="classes-hero">
+        <div class="chapter-top-nav">
+          <button id="back-to-chapters-btn" class="btn-icon-back" title="Back to chapters" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          
+          <div class="chapter-title-group">
+            <span class="chapter-subject-name" id="current-chapter-subject">Subject</span>
+            <h1 class="chapter-heading" id="current-chapter-title">Chapter Name</h1>
+          </div>
+        </div>
+
+        <div class="chapter-bar-bottom">
+          <!-- Chapter Progress Bar -->
+          <div class="chapter-progress-box">
+            <div class="chapter-progress-track">
+              <div class="chapter-progress-fill" id="chapter-meter-fill" style="width: 0%;"></div>
+            </div>
+            <span class="chapter-progress-text" id="current-chapter-progress">0 of 0 completed</span>
+          </div>
+
+          <div class="chapter-search-wrap">
+            <svg class="search-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="chapter-classes-search" class="chapter-search-input" placeholder="Filter classes..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="classes-grid" id="classes-list-container">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 3: CLASS PLAYER / VIEWER -->
+    <section id="view-player" class="view-section">
+      <!-- Player Top Bar -->
+      <div class="player-header-card">
+        <div class="player-header-left">
+          <button id="back-to-classes-btn" class="btn-icon-back" title="Back to classes" aria-label="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+
+          <div class="player-title-block">
+            <span id="player-breadcrumb" class="player-breadcrumb-text">Subject / Chapter</span>
+            <h2 id="player-class-title" class="player-main-title">Class Name</h2>
+          </div>
+        </div>
+
+        <div class="player-actions-group">
+          <button id="player-prev-btn" class="btn-action-nav" title="Previous Class">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button id="player-mark-done-btn" class="btn-mark-toggle">
+            <span id="player-done-text">Mark Done</span>
+          </button>
+          <button id="player-next-btn" class="btn-action-nav" title="Next Class">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Video Theater -->
+      <div id="player-video-box" class="player-media-container" style="display: none;">
+        <div class="custom-player-wrapper" id="custom-player-wrapper" tabindex="0">
+          <video id="main-video-player" preload="metadata" playsinline>
+            Your browser does not support HTML5 video.
+          </video>
+
+          <div class="video-click-surface" id="video-click-surface">
+            <div class="double-tap-zone left" id="tap-zone-left">
+              <div class="double-tap-ripple" id="ripple-left">10s</div>
+            </div>
+            <div class="video-center-indicator" id="video-center-indicator">
+              <div class="center-icon-wrap" id="center-icon-wrap"></div>
+            </div>
+            <div class="double-tap-zone right" id="tap-zone-right">
+              <div class="double-tap-ripple" id="ripple-right">10s</div>
+            </div>
+          </div>
+
+          <div class="video-resume-banner" id="video-resume-banner" style="display: none;">
+            <span class="resume-msg">Resumed at <strong id="resume-time-text">00:00</strong></span>
+            <button id="resume-restart-btn" class="btn-resume-action" type="button">Restart</button>
+            <button id="resume-dismiss-btn" class="btn-resume-close" type="button">&times;</button>
+          </div>
+
+          <div class="custom-video-controls" id="custom-video-controls">
+            <div class="player-progress-container" id="player-progress-container">
+              <div class="player-time-tooltip" id="player-time-tooltip">00:00</div>
+              <div class="player-progress-track" id="player-progress-track">
+                <div class="progress-bar-buffer" id="progress-bar-buffer"></div>
+                <div class="progress-bar-played" id="progress-bar-played">
+                  <div class="progress-scrubber-thumb"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="player-controls-row">
+              <div class="ctrl-group left">
+                <button id="ctrl-play-btn" class="ctrl-btn" title="Play/Pause (Space)">
+                  <svg id="icon-play" class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <svg id="icon-pause" class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+
+                <button id="ctrl-rewind-btn" class="ctrl-btn" title="Rewind 10s">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+
+                <button id="ctrl-forward-btn" class="ctrl-btn" title="Forward 10s">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+
+                <div class="volume-control-wrap">
+                  <button id="ctrl-mute-btn" class="ctrl-btn" title="Mute (M)">
+                    <svg id="icon-vol-high" class="icon-vol-high" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    <svg id="icon-vol-low" class="icon-vol-low" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    <svg id="icon-vol-mute" class="icon-vol-mute" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                  </button>
+                  <div class="volume-slider-container">
+                    <input type="range" id="ctrl-volume-slider" min="0" max="1" step="0.02" value="1">
+                  </div>
+                </div>
+
+                <div class="player-time-display" id="player-time-display">
+                  <span id="ctrl-time-current">00:00</span>
+                  <span class="time-sep">/</span>
+                  <span id="ctrl-time-duration">00:00</span>
+                </div>
+              </div>
+
+              <div class="ctrl-group right">
+                <div class="speed-menu-container">
+                  <button id="ctrl-speed-btn" class="ctrl-btn text-btn" title="Speed">
+                    <span id="ctrl-speed-text">1x</span>
+                  </button>
+                  <div class="speed-menu-popover" id="speed-menu-popover" style="display:none;">
+                    <div class="speed-menu-header">Speed</div>
+                    <div class="custom-speed-row">
+                      <button type="button" class="btn-speed-step" id="btn-speed-minus">−</button>
+                      <div class="custom-speed-input-wrap">
+                        <input type="number" id="custom-speed-input" min="0.25" max="4.0" step="0.05" value="1.00">
+                        <span class="speed-x-label">x</span>
+                      </div>
+                      <button type="button" class="btn-speed-step" id="btn-speed-plus">+</button>
+                    </div>
+                    <div class="speed-presets-divider"></div>
+                    <div class="speed-presets-scroll">
+                      <div class="speed-option" data-speed="0.5">0.5x</div>
+                      <div class="speed-option" data-speed="0.75">0.75x</div>
+                      <div class="speed-option active" data-speed="1">1x</div>
+                      <div class="speed-option" data-speed="1.25">1.25x</div>
+                      <div class="speed-option" data-speed="1.5">1.5x</div>
+                      <div class="speed-option" data-speed="1.75">1.75x</div>
+                      <div class="speed-option" data-speed="2">2x</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button id="ctrl-pip-btn" class="ctrl-btn" title="PiP">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor"/></svg>
+                </button>
+
+                <button id="ctrl-fullscreen-btn" class="ctrl-btn" title="Fullscreen">
+                  <svg id="icon-fs-enter" class="icon-fs-enter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                  <svg id="icon-fs-exit" class="icon-fs-exit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Selector Toolbar -->
+      <div class="player-tabs-wrapper" id="player-tabs-container">
+        <div class="tabs-slider" id="player-tabs-list"></div>
+      </div>
+
+      <!-- PDF / Document Viewer Section (Below Video) -->
+      <div id="player-doc-box" class="doc-viewer-section" style="display: none;">
+        <div class="pdf-top-bar">
+          <div class="pdf-info-left">
+            <span id="doc-title-text" class="pdf-doc-title">Document</span>
+            <span id="doc-size-badge" class="pdf-size-pill">0 MB</span>
+          </div>
+          <div class="pdf-actions-right">
+            <a id="doc-external-link" class="btn-pdf-action" target="_blank" rel="noopener">Open in Tab</a>
+            <a id="doc-download-link" class="btn-pdf-action" download>Download</a>
+            <button id="doc-fullscreen-btn" class="btn-pdf-action">Fullscreen</button>
+          </div>
+        </div>
+        <iframe id="main-pdf-frame" class="main-pdf-frame" src="" title="PDF Viewer" allowfullscreen></iframe>
+      </div>
+
+      <!-- Extra Files View (Below Video/PDF) -->
+      <div id="player-other-box" class="extra-files-section" style="display: none;">
+        <div class="extra-files-pane">
+          <h3>Attachments</h3>
+          <ul id="extra-files-list" class="extra-files-ul"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- To-Do Drawer Overlay -->
+  <div id="todo-overlay" class="todo-overlay" style="display: none;">
+    <div class="todo-drawer" id="todo-drawer">
+      <div class="todo-header">
+        <div class="todo-header-left">
+          <div class="todo-title-row">
+            <svg class="todo-title-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <h2>To-Do List</h2>
+            <span id="todo-count-pill" class="todo-count-pill">0 tasks</span>
+          </div>
+          <p class="todo-subtitle">Keep track of your study goals and pending tasks</p>
+        </div>
+        <button id="todo-close-btn" class="btn-icon-close" title="Close (Esc)" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Add Todo Form -->
+      <form id="todo-form" class="todo-input-form">
+        <input type="text" id="todo-input" class="todo-input" placeholder="Add a new task or study goal..." autocomplete="off">
+        <button type="submit" id="todo-add-btn" class="btn-todo-submit">Add</button>
+      </form>
+
+      <!-- Filter Controls -->
+      <div class="todo-filter-bar">
+        <div class="todo-filter-tabs">
+          <button type="button" class="todo-filter-btn active" data-filter="all">All</button>
+          <button type="button" class="todo-filter-btn" data-filter="active">Active</button>
+          <button type="button" class="todo-filter-btn" data-filter="completed">Completed</button>
+        </div>
+        <button type="button" id="todo-clear-completed-btn" class="todo-clear-btn" style="display: none;">Clear Completed</button>
+      </div>
+
+      <!-- Todo List Items -->
+      <div class="todo-list-container">
+        <ul id="todo-list" class="todo-list"></ul>
+        <div id="todo-empty-state" class="todo-empty-state" style="display: none;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12l2 2 4-4"></path>
+          </svg>
+          <p class="empty-title">All caught up!</p>
+          <p class="empty-desc">No tasks in this list. Add a task above to stay organized.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="courses-manifest.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
