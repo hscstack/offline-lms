@@ -671,7 +671,7 @@
   // Handles real File objects, Directory Handle files, and Manifest items ({path, size})
   function classifyAndInsertItem(item, pathParts, lecturesMap) {
     const fileName = pathParts[pathParts.length - 1];
-    if (fileName.startsWith('.') || SKIP_NAMES.has(fileName)) return;
+    if (!fileName || fileName.startsWith('.') || SKIP_NAMES.has(fileName)) return;
 
     let subject = 'General';
     let chapter = 'General';
@@ -680,7 +680,9 @@
     if (pathParts.length >= 4) {
       subject     = pathParts[0];
       chapter     = pathParts[1];
-      lectureName = pathParts[2];
+      const rawName = pathParts.slice(2).join(' - ');
+      const lastDot = rawName.lastIndexOf('.');
+      lectureName = lastDot > 0 ? rawName.substring(0, lastDot) : rawName;
     } else if (pathParts.length === 3) {
       subject     = pathParts[0];
       chapter     = pathParts[1];
@@ -692,10 +694,23 @@
       const lastDot = fileName.lastIndexOf('.');
       lectureName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
     } else {
-      subject     = 'General';
-      chapter     = 'General';
+      // 1 part (flat file or direct file selection)
       const lastDot = fileName.lastIndexOf('.');
-      lectureName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+      const rawName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+      const parts = rawName.split(/[-_—]/).map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 3) {
+        subject = parts[0];
+        chapter = parts[1];
+        lectureName = parts.slice(2).join(' - ');
+      } else if (parts.length === 2) {
+        subject = 'General';
+        chapter = parts[0];
+        lectureName = parts[1];
+      } else {
+        subject = 'General';
+        chapter = 'All Classes';
+        lectureName = rawName;
+      }
     }
 
     const lectureId = `${subject}:::${chapter}:::${lectureName}`;
@@ -723,10 +738,10 @@
     const lec   = lecturesMap[lectureId];
     const lower = fileName.toLowerCase();
 
-    if (/\.(mp4|webm|mkv|mov|avi|m4v)$/.test(lower)) {
+    if (/\.(mp4|webm|mkv|mov|avi|m4v|ogv|3gp|ts)$/i.test(lower)) {
       if (!lec.video) lec.video = item; else lec.otherFiles.push(item);
     } else if (lower.endsWith('.pdf')) {
-      if (lower.includes('lecture') || lower.includes('class') || lower.includes('sheet') || lower.includes('লেফটেন্যান্ট')) {
+      if (lower.includes('lecture') || lower.includes('class') || lower.includes('sheet') || lower.includes('লেফটেন্যান্ট') || lower.includes('লেকচার')) {
         if (!lec.lectureSheet) lec.lectureSheet = item; else lec.otherPdfs.push(item);
       } else if (lower.includes('practice') || lower.includes('dpp') || lower.includes('অনুশীলনী') || lower.includes('exam')) {
         if (!lec.practiceSheet) lec.practiceSheet = item; else lec.otherPdfs.push(item);
@@ -786,8 +801,7 @@
       const file = files[i];
       const relPath = file.webkitRelativePath || file.name;
       const parts = relPath.split('/');
-      const subParts = parts.length > 1 ? parts.slice(1) : parts;
-      classifyAndInsertItem(file, subParts, lecturesMap);
+      classifyAndInsertItem(file, parts, lecturesMap);
     }
 
     finalizeCoursesData();
@@ -989,12 +1003,15 @@
   }
 
   function renderSubjectFilterTabs() {
+    if (!subjectFilterTabs) return;
     subjectFilterTabs.innerHTML = '';
     const subjects = Object.keys(coursesData).sort(naturalSort);
+    let totalChapters = 0;
+    subjects.forEach(s => totalChapters += Object.keys(coursesData[s]).length);
 
     const allBtn = document.createElement('button');
-    allBtn.className = `filter-chip-btn ${currentSubjectFilter === 'all' ? 'active' : ''}`;
-    allBtn.textContent = 'All Subjects';
+    allBtn.className = `subject-tab-btn ${currentSubjectFilter === 'all' ? 'active' : ''}`;
+    allBtn.innerHTML = `<span>All Subjects</span> <span class="tab-count">${totalChapters}</span>`;
     allBtn.addEventListener('click', () => {
       currentSubjectFilter = 'all';
       renderSubjectFilterTabs();
@@ -1003,9 +1020,10 @@
     subjectFilterTabs.appendChild(allBtn);
 
     subjects.forEach(sub => {
+      const count = Object.keys(coursesData[sub]).length;
       const btn = document.createElement('button');
-      btn.className = `filter-chip-btn ${currentSubjectFilter === sub ? 'active' : ''}`;
-      btn.textContent = sub;
+      btn.className = `subject-tab-btn ${currentSubjectFilter === sub ? 'active' : ''}`;
+      btn.innerHTML = `<span>${escapeHtml(sub)}</span> <span class="tab-count">${count}</span>`;
       btn.addEventListener('click', () => {
         currentSubjectFilter = sub;
         renderSubjectFilterTabs();
@@ -1016,9 +1034,10 @@
   }
 
   function renderChaptersGrid() {
+    if (!chaptersGrid) return;
     chaptersGrid.innerHTML = '';
     const doneSet = getDoneClasses();
-    const query = chaptersSearchQuery.toLowerCase();
+    const query = (chaptersSearchQuery || '').trim().toLowerCase();
 
     const chapterList = [];
 
@@ -1026,50 +1045,57 @@
       if (currentSubjectFilter !== 'all' && currentSubjectFilter !== sub) return;
 
       Object.keys(coursesData[sub]).forEach(chap => {
-        const matchesQuery = !query || sub.toLowerCase().includes(query) || chap.toLowerCase().includes(query);
+        const chapObj = coursesData[sub][chap];
+        const lectures = chapObj.lectures;
+        const total = lectures.length;
+        const done = lectures.filter(l => doneSet.has(l.id)).length;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+        const matchesQuery = !query || sub.toLowerCase().includes(query) || chap.toLowerCase().includes(query) || lectures.some(l => l.name.toLowerCase().includes(query));
         if (matchesQuery) {
-          chapterList.push(coursesData[sub][chap]);
+          chapterList.push({ subject: sub, chapter: chap, total, done, pct });
         }
       });
     });
 
     if (chapterList.length === 0) {
       chaptersGrid.innerHTML = `
-        <div class="empty-state">
-          <p>No chapters found.</p>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-subtle);">
+          <p style="font-weight: 700; font-size: 15px; color: var(--text-title);">No chapters found</p>
+          <p style="font-size: 13px; margin-top: 4px;">Make sure the selected folder contains video or PDF files.</p>
         </div>
       `;
       return;
     }
 
-    chapterList.forEach(chapObj => {
-      const total = chapObj.lectures.length;
-      let done = 0;
-      chapObj.lectures.forEach(l => {
-        if (doneSet.has(l.id)) done++;
-      });
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    chapterList.sort((a, b) => naturalSort(a.chapter, b.chapter));
 
+    chapterList.forEach(c => {
       const card = document.createElement('div');
-      card.className = 'chapter-card-item';
+      card.className = 'chapter-card';
+      const colorClass = getSubjectColorClass(c.subject);
+
       card.innerHTML = `
         <div>
-          <div class="card-subject-name">${escapeHtml(chapObj.subject)}</div>
-          <h2 class="card-header-title">${escapeHtml(chapObj.chapter)}</h2>
+          <div class="chapter-card-top">
+            <span class="subject-pill ${colorClass}">${escapeHtml(c.subject)}</span>
+            <span class="chapter-card-count">${c.total} ${c.total === 1 ? 'class' : 'classes'}</span>
+          </div>
+          <h3 class="chapter-card-title">${escapeHtml(c.chapter)}</h3>
         </div>
-        <div class="chapter-card-footer-track">
-          <div class="chapter-card-meta-row">
-            <span>${total} ${total === 1 ? 'class' : 'classes'}</span>
-            <span>${done > 0 ? `${done} of ${total} done` : ''}</span>
+        <div class="chapter-card-bottom">
+          <div class="chapter-progress-meta">
+            <span>${c.done > 0 ? `${c.done} of ${c.total} completed` : `${c.total} ${c.total === 1 ? 'class' : 'classes'}`}</span>
+            <span style="font-weight: 700; font-family: var(--font-mono);">${c.pct}%</span>
           </div>
           <div class="chapter-card-track">
-            <div class="chapter-card-fill" style="width: ${pct}%;"></div>
+            <div class="chapter-card-fill" style="width: ${c.pct}%;"></div>
           </div>
         </div>
       `;
 
       card.addEventListener('click', () => {
-        navigateTo(`#/chapter?sub=${encodeURIComponent(chapObj.subject)}&chap=${encodeURIComponent(chapObj.chapter)}`);
+        navigateTo(`#/chapter?sub=${encodeURIComponent(c.subject)}&chap=${encodeURIComponent(c.chapter)}`);
       });
 
       chaptersGrid.appendChild(card);
@@ -1445,6 +1471,28 @@
   }
 
   // --- EVENT LISTENERS ---
+  const chooseFolderBtn = document.getElementById('choose-folder-btn');
+  if (chooseFolderBtn) {
+    chooseFolderBtn.addEventListener('click', async () => {
+      if (window.showDirectoryPicker) {
+        try {
+          const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+          if (dirHandle) {
+            await saveHandleToIDB(dirHandle);
+            await loadCoursesFromHandle(dirHandle);
+            return;
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            folderInput.click();
+          }
+        }
+      } else {
+        folderInput.click();
+      }
+    });
+  }
+
   folderInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files.length > 0) {
       parseSelectedFolder(e.target.files);
