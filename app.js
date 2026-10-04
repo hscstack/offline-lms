@@ -660,7 +660,7 @@
   async function loadCoursesFromHandle(dirHandle) {
     coursesData = {};
     const lecturesMap = {};
-    rootFolderName.textContent = 'Offline LMS';
+    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
 
     await walkDirHandle(dirHandle, [], lecturesMap);
 
@@ -778,7 +778,7 @@
   function loadCoursesFromManifest(manifestList) {
     coursesData = {};
     const lecturesMap = {};
-    rootFolderName.textContent = 'Offline LMS';
+    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
 
     manifestList.forEach(entry => {
       const parts = entry.path.split('/');
@@ -793,7 +793,7 @@
     coursesData = {};
     if (!files || files.length === 0) return;
 
-    rootFolderName.textContent = 'Offline LMS';
+    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
 
     const lecturesMap = {};
 
