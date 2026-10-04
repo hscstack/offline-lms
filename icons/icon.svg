@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <!-- Glow Circle -->
+  <circle cx="256" cy="256" r="160" fill="url(#accentGrad)" opacity="0.15" />
+  <!-- Book / Monitor Shape -->
+  <rect x="128" y="128" width="256" height="180" rx="24" fill="#ffffff" />
+  <rect x="144" y="144" width="224" height="148" rx="16" fill="#0f172a" />
+  <!-- Play Triangle -->
+  <polygon points="230,180 306,218 230,256" fill="#3b82f6" />
+  <!-- Base Stand / Book spine -->
+  <rect x="220" y="324" width="72" height="20" rx="6" fill="#64748b" />
+  <rect x="176" y="352" width="160" height="16" rx="8" fill="#475569" />
+</svg>
