@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  // PWA Service Worker Registration
+  // PWA Offline Service Worker Registration
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -660,7 +660,7 @@
   async function loadCoursesFromHandle(dirHandle) {
     coursesData = {};
     const lecturesMap = {};
-    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
+    if (rootFolderName) rootFolderName.textContent = 'Offline LMS';
 
     await walkDirHandle(dirHandle, [], lecturesMap);
 
@@ -694,7 +694,7 @@
       const lastDot = fileName.lastIndexOf('.');
       lectureName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
     } else {
-      // 1 part (flat file or direct file selection)
+      // 1 part (flat files)
       const lastDot = fileName.lastIndexOf('.');
       const rawName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
       const parts = rawName.split(/[-_—]/).map(s => s.trim()).filter(Boolean);
@@ -778,7 +778,7 @@
   function loadCoursesFromManifest(manifestList) {
     coursesData = {};
     const lecturesMap = {};
-    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
+    if (rootFolderName) rootFolderName.textContent = 'Offline LMS';
 
     manifestList.forEach(entry => {
       const parts = entry.path.split('/');
@@ -793,7 +793,7 @@
     coursesData = {};
     if (!files || files.length === 0) return;
 
-    if (rootFolderName) rootFolderName.innerHTML = 'Offline<span class="brand-title-accent">LMS</span>';
+    if (rootFolderName) rootFolderName.textContent = 'Offline LMS';
 
     const lecturesMap = {};
 
@@ -801,7 +801,8 @@
       const file = files[i];
       const relPath = file.webkitRelativePath || file.name;
       const parts = relPath.split('/');
-      classifyAndInsertItem(file, parts, lecturesMap);
+      const subParts = (file.webkitRelativePath && parts.length > 1) ? parts.slice(1) : parts;
+      classifyAndInsertItem(file, subParts, lecturesMap);
     }
 
     finalizeCoursesData();
@@ -1003,15 +1004,12 @@
   }
 
   function renderSubjectFilterTabs() {
-    if (!subjectFilterTabs) return;
     subjectFilterTabs.innerHTML = '';
     const subjects = Object.keys(coursesData).sort(naturalSort);
-    let totalChapters = 0;
-    subjects.forEach(s => totalChapters += Object.keys(coursesData[s]).length);
 
     const allBtn = document.createElement('button');
-    allBtn.className = `subject-tab-btn ${currentSubjectFilter === 'all' ? 'active' : ''}`;
-    allBtn.innerHTML = `<span>All Subjects</span> <span class="tab-count">${totalChapters}</span>`;
+    allBtn.className = `filter-chip-btn ${currentSubjectFilter === 'all' ? 'active' : ''}`;
+    allBtn.textContent = 'All Subjects';
     allBtn.addEventListener('click', () => {
       currentSubjectFilter = 'all';
       renderSubjectFilterTabs();
@@ -1020,10 +1018,9 @@
     subjectFilterTabs.appendChild(allBtn);
 
     subjects.forEach(sub => {
-      const count = Object.keys(coursesData[sub]).length;
       const btn = document.createElement('button');
-      btn.className = `subject-tab-btn ${currentSubjectFilter === sub ? 'active' : ''}`;
-      btn.innerHTML = `<span>${escapeHtml(sub)}</span> <span class="tab-count">${count}</span>`;
+      btn.className = `filter-chip-btn ${currentSubjectFilter === sub ? 'active' : ''}`;
+      btn.textContent = sub;
       btn.addEventListener('click', () => {
         currentSubjectFilter = sub;
         renderSubjectFilterTabs();
@@ -1034,10 +1031,9 @@
   }
 
   function renderChaptersGrid() {
-    if (!chaptersGrid) return;
     chaptersGrid.innerHTML = '';
     const doneSet = getDoneClasses();
-    const query = (chaptersSearchQuery || '').trim().toLowerCase();
+    const query = chaptersSearchQuery.toLowerCase();
 
     const chapterList = [];
 
@@ -1045,57 +1041,50 @@
       if (currentSubjectFilter !== 'all' && currentSubjectFilter !== sub) return;
 
       Object.keys(coursesData[sub]).forEach(chap => {
-        const chapObj = coursesData[sub][chap];
-        const lectures = chapObj.lectures;
-        const total = lectures.length;
-        const done = lectures.filter(l => doneSet.has(l.id)).length;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-
-        const matchesQuery = !query || sub.toLowerCase().includes(query) || chap.toLowerCase().includes(query) || lectures.some(l => l.name.toLowerCase().includes(query));
+        const matchesQuery = !query || sub.toLowerCase().includes(query) || chap.toLowerCase().includes(query);
         if (matchesQuery) {
-          chapterList.push({ subject: sub, chapter: chap, total, done, pct });
+          chapterList.push(coursesData[sub][chap]);
         }
       });
     });
 
     if (chapterList.length === 0) {
       chaptersGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-subtle);">
-          <p style="font-weight: 700; font-size: 15px; color: var(--text-title);">No chapters found</p>
-          <p style="font-size: 13px; margin-top: 4px;">Make sure the selected folder contains video or PDF files.</p>
+        <div class="empty-state">
+          <p>No chapters found.</p>
         </div>
       `;
       return;
     }
 
-    chapterList.sort((a, b) => naturalSort(a.chapter, b.chapter));
+    chapterList.forEach(chapObj => {
+      const total = chapObj.lectures.length;
+      let done = 0;
+      chapObj.lectures.forEach(l => {
+        if (doneSet.has(l.id)) done++;
+      });
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    chapterList.forEach(c => {
       const card = document.createElement('div');
-      card.className = 'chapter-card';
-      const colorClass = getSubjectColorClass(c.subject);
-
+      card.className = 'chapter-card-item';
       card.innerHTML = `
         <div>
-          <div class="chapter-card-top">
-            <span class="subject-pill ${colorClass}">${escapeHtml(c.subject)}</span>
-            <span class="chapter-card-count">${c.total} ${c.total === 1 ? 'class' : 'classes'}</span>
-          </div>
-          <h3 class="chapter-card-title">${escapeHtml(c.chapter)}</h3>
+          <div class="card-subject-name">${escapeHtml(chapObj.subject)}</div>
+          <h2 class="card-header-title">${escapeHtml(chapObj.chapter)}</h2>
         </div>
-        <div class="chapter-card-bottom">
-          <div class="chapter-progress-meta">
-            <span>${c.done > 0 ? `${c.done} of ${c.total} completed` : `${c.total} ${c.total === 1 ? 'class' : 'classes'}`}</span>
-            <span style="font-weight: 700; font-family: var(--font-mono);">${c.pct}%</span>
+        <div class="chapter-card-footer-track">
+          <div class="chapter-card-meta-row">
+            <span>${total} ${total === 1 ? 'class' : 'classes'}</span>
+            <span>${done > 0 ? `${done} of ${total} done` : ''}</span>
           </div>
           <div class="chapter-card-track">
-            <div class="chapter-card-fill" style="width: ${c.pct}%;"></div>
+            <div class="chapter-card-fill" style="width: ${pct}%;"></div>
           </div>
         </div>
       `;
 
       card.addEventListener('click', () => {
-        navigateTo(`#/chapter?sub=${encodeURIComponent(c.subject)}&chap=${encodeURIComponent(c.chapter)}`);
+        navigateTo(`#/chapter?sub=${encodeURIComponent(chapObj.subject)}&chap=${encodeURIComponent(chapObj.chapter)}`);
       });
 
       chaptersGrid.appendChild(card);
@@ -1471,33 +1460,13 @@
   }
 
   // --- EVENT LISTENERS ---
-  const chooseFolderBtn = document.getElementById('choose-folder-btn');
-  if (chooseFolderBtn) {
-    chooseFolderBtn.addEventListener('click', async () => {
-      if (window.showDirectoryPicker) {
-        try {
-          const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
-          if (dirHandle) {
-            await saveHandleToIDB(dirHandle);
-            await loadCoursesFromHandle(dirHandle);
-            return;
-          }
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            folderInput.click();
-          }
-        }
-      } else {
-        folderInput.click();
+  if (folderInput) {
+    folderInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        parseSelectedFolder(e.target.files);
       }
     });
   }
-
-  folderInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      parseSelectedFolder(e.target.files);
-    }
-  });
 
   const multiFileInput = document.getElementById('multi-file-input');
   if (multiFileInput) {

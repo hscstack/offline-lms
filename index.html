@@ -7,13 +7,12 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -35,13 +34,13 @@
         </button>
       </div>
 
-      <button type="button" id="choose-folder-btn" class="btn-primary" style="width: 100%;">
+      <label class="btn-primary file-picker-label">
         <span>Choose Folder</span>
-      </button>
-      <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+        <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+      </label>
 
       <label class="btn-secondary file-picker-label" style="margin-top: 10px;">
-        <span>Select Files</span>
+        <span>Select Files (Mobile)</span>
         <input type="file" id="multi-file-input" multiple accept="video/*,.pdf,.mkv,.mp4,.webm" hidden>
       </label>
     </div>
@@ -51,19 +50,8 @@
   <header class="app-header">
     <div class="header-container">
       <div class="header-brand" id="brand-home-btn" role="button" tabindex="0">
-        <div class="brand-logo-box">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-          </svg>
-        </div>
-        <div class="brand-text-block">
-          <div class="brand-title-wrap">
-            <span class="brand-title" id="root-folder-name">Offline<span class="brand-title-accent">LMS</span></span>
-            <span class="brand-hsc-badge">HSCStack</span>
-          </div>
-          <p class="brand-byline">Powered By <a href="https://hscstack.site" target="_blank" rel="noopener">HSCStack</a></p>
-        </div>
+        <span class="brand-title" id="root-folder-name">Offline LMS</span>
+        <p>Powered By <a href="https://hscstack.site" target="_blank">HSCStack</a></p>
       </div>
 
       <!-- Center Overall Progress Bar -->
@@ -387,7 +375,7 @@
     </div>
   </div>
 
-  <script src="courses-manifest.js" onerror="/* Optional manifest */"></script>
+  <script src="courses-manifest.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
